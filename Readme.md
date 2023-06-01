@@ -6,16 +6,16 @@ This repository contains the **duplicateFinder**, scripts for finding audio dupl
 Unlike many other approaches, it uses raw audio information without any metadata (except the name of files). It is able to recognise
 duplicates even when they slightly differ and/or contain only a segment of the recording.
 
-You will find two main scripts: *df.py* and *df_GUI.py* in this repo. Both contain the same functionality, either called by
+You will find two main scripts: **df.py** and **df_GUI.py** in this repo. Both contain the same functionality, either called by
 flags or a simple Tkinter GUI.
 
 ## Description:
 
 The **duplicateFinder** class can be divided into a few steps:
-- First, the chroma representation of all files is computed via either synctoolbox or nnAudio modules and saved in <df_data/chroma> folder (if <matching_single> is set to True, its chroma vectors and images are saved in <df_data/reference> folder). If nnAudio is selected (default) and the cuda driver on your device is available, the computation of chroma vectors is much faster. Then, all chroma files are converted to .png images and saved in <df_data/img folder>.
+- First, the chroma representation of all files is computed via either 'synctoolbox' or 'nnAudio' modules and saved in 'df_data/chroma' folder (if matching_single is set to True, its chroma vectors and images are saved in 'df_data/reference' folder). If nnAudio is selected (default) and the cuda driver on your device is available, the computation of chroma vectors is much faster. Then, all chroma files are converted to .png images and saved in 'df_data/img folder'.
 - All selected images (or a single image, depending on the preset) are compared with all images. This is done by opencv matchTemplate and minMaxLoc methods.
 It also works for a small segment of a given audio file; e.g., the first 10 seconds of a recording compared to the whole recording is a match (duplicate) and should be evaluated this way.
-- Finally, results are printed to the console (or GUI fake console) and saved in <df_data/output> folder. The name of output .csv and .xlsx files depends on the method used (such as 'df_matching_hard_duplicates.csv').
+- Finally, results are printed to the console (or GUI fake console) and saved in 'df_data/output' folder. The name of output .csv and .xlsx files depends on the method used (such as 'df_matching_hard_duplicates.csv').
 
 The program computes 'hard' duplicates, 'soft' duplicates and 'low' duplicates. It is possible that two recordings are similar in structure but not exactly the same – parameter soft_val (default is set to 0.5) controls the threshold value.
 Low duplicates (similarity value < 0.05) show files that may be a bit similar. All duplicate types are handled and exported separately.
@@ -23,7 +23,7 @@ The implementation was tested on Windows 10 (21H2) and Linux Mint 21.1.
 
 ### Note: 
 
-Parameters <matching> and <matching_single> cannot be set to True in the same time. Similarly, <reference> and <reference_name> cannot be set in the same time. However, one can choose <path_to_files> and <input_files> simultaneously, automatically discarding the possible duplicate paths.
+Parameters 'matching' and 'matching_single' cannot be set to True in the same time. Similarly, 'reference' and 'reference_name' cannot be set in the same time. However, one can choose 'path_to_files' and 'input_files' simultaneously, automatically discarding the possible duplicate paths.
 
 ## Install
 
@@ -58,12 +58,12 @@ or
 python dF.py -p /home/finder_data -rn test_recording -ms True
 ```
 
-*df_GUI.py* version works the same way; parameters are chosen via a graphical interface.
+**df_GUI.py** version works the same way; parameters are chosen via a graphical interface.
 
 Useful flags:
 
-- -d	: if True, outputs additional information
-- -ex or -csv	: if True, results are saved as .xlsx and/or .csv files
+- -d #^#^ if True, outputs additional information
+- -ex or -csv #^#^ if True, results are saved as .xlsx and/or .csv files
 
 
 ### Note:
