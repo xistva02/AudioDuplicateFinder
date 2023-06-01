@@ -33,7 +33,7 @@ To install the dependencies, use:
 python install -r requirements.txt
 ```
 
-To load non .wav audio files, install ffmpeg to your OS and add it to the SYS path (more info). To output results to the .xlsx files using pandas, install openpyxl:
+To load non .wav audio files, install ffmpeg to your OS and add it to the SYS path (see **ffmpeg_installation.txt**). To output results to the .xlsx files using pandas, install openpyxl:
 
 ```
 python install openpyxl
@@ -62,8 +62,8 @@ python dF.py -p /home/finder_data -rn test_recording -ms True
 
 Useful flags:
 
-- -d #^#^ if True, outputs additional information
-- -ex or -csv #^#^ if True, results are saved as .xlsx and/or .csv files
+- -d      if True, outputs additional information
+- -ex or -csv    if True, results are saved as .xlsx and/or .csv files
 
 
 ### Note:
