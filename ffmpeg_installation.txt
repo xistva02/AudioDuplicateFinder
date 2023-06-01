@@ -1,0 +1,17 @@
+####
+To install ffmpeg on Linux using yum:
+
+Sources:
+https://www.cyberithub.com/simple-easy-steps-to-install-ffmpeg-on-rhel-centos-7-8/
+https://access.redhat.com/discussions/5480461
+https://snapcraft.io/install/ffmpeg/rhel
+
+yum localinstall --nogpgcheck https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm -y
+yum install ffmpeg ffmpeg-devel
+rpm -qa | grep -i ffmpeg
+ffmpeg -version
+
+####
+To install ffmpeg on Windows:
+
+https://ffmpeg.org/download.html
