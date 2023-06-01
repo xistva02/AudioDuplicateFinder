@@ -62,6 +62,7 @@ python dF.py -p /home/finder_data -rn test_recording -ms True
 
 Useful flags:
 
+- -o path to the output directory
 - -d if True, outputs additional information
 - -ex or -csv if True, results are saved as .xlsx and/or .csv files
 
