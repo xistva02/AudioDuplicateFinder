@@ -17,7 +17,7 @@ The **duplicateFinder** class can be divided into a few steps:
 It also works for a small segment of a given audio file; e.g., the first 10 seconds of a recording compared to the whole recording is a match (duplicate) and should be evaluated this way.
 - Finally, results are printed to the console (or GUI fake console) and saved in 'df_data/output' folder. The name of output .csv and .xlsx files depends on the method used (such as 'df_matching_hard_duplicates.csv').
 
-The program computes 'hard' duplicates, 'soft' duplicates and 'low' duplicates. It is possible that two recordings are similar in structure but not exactly the same – parameter soft_val (default is set to 0.5) controls the threshold value.
+The program computes 'hard' duplicates, 'soft' duplicates, and 'low' duplicates. It is possible that two recordings are similar in structure but not exactly the same – parameter soft_val (default is set to 0.5) controls the threshold value.
 Low duplicates (similarity value < 0.05) show files that may be a bit similar. All duplicate types are handled and exported separately.
 The implementation was tested on Windows 10 (21H2) and Linux Mint 21.1.
 
