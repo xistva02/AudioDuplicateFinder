@@ -15,3 +15,6 @@ ffmpeg -version
 To install ffmpeg on Windows:
 
 https://ffmpeg.org/download.html
+
+Info:
+https://phoenixnap.com/kb/ffmpeg-windows
