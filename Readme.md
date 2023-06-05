@@ -9,6 +9,9 @@ duplicates even when they slightly differ and/or contain only a segment of the r
 You will find two main scripts: **df.py** and **df_GUI.py** in this repo. Both contain the same functionality, either called by
 flags or a simple Tkinter GUI.
 
+Example of GUI version:
+![Alt text](GUI.PNG)
+
 ## Description:
 
 The **duplicateFinder** class can be divided into a few steps:
