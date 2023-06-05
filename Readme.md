@@ -10,7 +10,7 @@ You will find two main scripts: **df.py** and **df_GUI.py** in this repo. Both c
 flags or a simple Tkinter GUI.
 
 Example of GUI version:
-![Alt text](GUI.PNG)
+![Alt text](GUI.PNG | width=100)
 
 ## Description:
 
