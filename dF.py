@@ -384,7 +384,7 @@ class duplicateFinder:
                      method=eval('cv2.TM_CCOEFF_NORMED')):
         """
         Load images and compare them using matchTemplate and minMaxLoc methods.
-        It returns hard, soft, and low duplicates and the value (between 0 and 1) of 'similarity'.
+        It returns hard, soft, and low duplicates and the value (between 0 and 1) of maximum 'similarity'.
         """
         img = cv2.imread(img1_path, 0)
         template = cv2.imread(img2_path, 0)
