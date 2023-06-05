@@ -58,7 +58,7 @@ or
 python dF.py -p /home/finder_data -rn test_recording -ms True
 ```
 
-**df_GUI.py** version works the same way; parameters are chosen via a graphical interface:
+**df_GUI.py** version works the same way; parameters are chosen via graphical interface:
 
 ```
 python dF_GUI.py
