@@ -11,7 +11,7 @@ flags or a simple Tkinter GUI.
 
 Example of GUI version:
 
-<img src="GUI.PNG" width="100" height="100" />
+<img src="GUI.PNG" width="500" height="500" />
 <!-- ![Alt text](GUI.PNG =250x250) -->
 
 ## Description:
