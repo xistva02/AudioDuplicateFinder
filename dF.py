@@ -14,6 +14,9 @@ import cv2
 from synctoolbox.feature.pitch import audio_to_pitch_features
 from synctoolbox.feature.chroma import pitch_to_chroma, quantize_chroma
 from nnAudio import features
+import warnings
+
+warnings.simplefilter("ignore", DeprecationWarning)
 
 
 class duplicateFinder:
@@ -72,7 +75,7 @@ class duplicateFinder:
     def run_on_files(self,
                      path_to_files: str = None,
                      input_files: list = None,
-                     reference: str = None,
+                     reference: str = '',
                      reference_name: str = '',
                      matching: bool = False,
                      matching_single: bool = False,
@@ -97,7 +100,7 @@ class duplicateFinder:
         if matching and matching_single or (not matching and not matching_single):
             raise Exception("ERROR: Choose 'matching' or 'matching_single' parameter, not both or none.")
         if reference and reference_name:
-            raise Exception("ERROR: Input a reference recording path or reference name, not both.")
+            raise Exception("ERROR: Input a reference recording path or reference name, not both. Reset the selection.")
 
         print(f'\nParameters selected:')
         if path_to_files:
@@ -110,8 +113,8 @@ class duplicateFinder:
         if reference_name:
             print(f'reference_name: {reference_name}')
         print(f'debug: {self.debug}')
-        print(f'cuda is available: {torch.cuda.is_available()}')
         print(f'chroma_method: {self.chroma_method}\n')
+        print(f'cuda is available: {torch.cuda.is_available()}')
 
         if path_to_files and input_files:
             partial_files = self.get_files(path_to_files=path_to_files)
@@ -121,15 +124,14 @@ class duplicateFinder:
         elif input_files:
             files = input_files.copy()
         else:
-            raise Exception("ERROR: Choose a folder or separate recordings.")
+            raise Exception("ERROR: Choose a folder or recordings.")
 
         if matching_single:
             if reference == '' and reference_name == '':
                 reference = files[0]
                 files.remove(reference)
-                if self.debug:
-                    print('Reference chosen automatically (first item of the list).')
-                    print(f'Reference: {reference}')
+                print('Reference chosen automatically (first item of the list).')
+                print(f'Reference: {reference}')
             elif reference_name != '':
                 try:
                     reference = [file for file in files if reference_name in file][0]
@@ -139,8 +141,7 @@ class duplicateFinder:
                     raise Exception(f"ERROR: Could not find a reference recording by that name...")
 
             else:
-                reference = reference.replace("/", "\\")
-                print(reference)
+                reference = reference.replace("/", "\\")                
                 try:
                     files.remove(reference)
                     if self.debug:
@@ -280,14 +281,15 @@ class duplicateFinder:
         low_duplicates = []
         result_all = []
 
-        ref_audio_data, _ = self.ffmpeg_load_audio(reference, sr=self.__fs, mono=self.mono)
-        ref_filename = os.path.basename(reference)
-        if self.chroma_method == 'nnAudio':
-            ref_chroma = self.calculate_chromagram_nnAudio(ref_audio_data)
-        elif self.chroma_method == 'synctoolbox':
-            ref_chroma = self.calculate_chromagram_synctoolbox(ref_audio_data)
-        else:
-            raise Exception('Chroma method has to be selected.')
+        with HiddenPrints():
+            ref_audio_data, _ = self.ffmpeg_load_audio(filename=reference, sr=self.__fs, mono=self.mono)
+            ref_filename = os.path.basename(reference)
+            if self.chroma_method == 'nnAudio':
+                ref_chroma = self.calculate_chromagram_nnAudio(ref_audio_data)
+            elif self.chroma_method == 'synctoolbox':
+                ref_chroma = self.calculate_chromagram_synctoolbox(ref_audio_data)
+            else:
+                raise Exception('Chroma method has to be selected.')
 
         np.save(f'{self.ref_path}/{ref_filename}.npy', ref_chroma)
         self.save_chroma_image(f'{self.ref_path}/{ref_filename}.npy', f'{self.ref_path}/{ref_filename}.png')
@@ -347,18 +349,20 @@ class duplicateFinder:
         """
         filenames = []
         print(f'...extracting chroma features...')
-        for file in tqdm(files):
-            filename = os.path.basename(file)
-            filenames.append(filename)
-            if not os.path.exists(f'{self.chroma_filepath}/{filename}.npy'):
-                audio_data, _ = self.ffmpeg_load_audio(file, sr=self.__fs, mono=self.mono)
-                if self.chroma_method == 'nnAudio':
-                    chroma = self.calculate_chromagram_nnAudio(audio_data)
-                elif self.chroma_method == 'synctoolbox':
-                    chroma = self.calculate_chromagram_synctoolbox(audio_data)
-                else:
-                    raise Exception('Choose the chroma method.')
-                np.save(f'{self.chroma_filepath}/{filename}.npy', chroma)
+        with HiddenPrints():
+            for file in tqdm(files):
+                filename = os.path.basename(file)
+                filenames.append(filename)
+                if not os.path.exists(f'{self.chroma_filepath}/{filename}.npy'):
+                    print(filename)
+                    audio_data, _ = self.ffmpeg_load_audio(filename=file, sr=self.__fs, mono=self.mono)
+                    if self.chroma_method == 'nnAudio':
+                        chroma = self.calculate_chromagram_nnAudio(audio_data)
+                    elif self.chroma_method == 'synctoolbox':
+                        chroma = self.calculate_chromagram_synctoolbox(audio_data)
+                    else:
+                        raise Exception('Choose the chroma method.')
+                    np.save(f'{self.chroma_filepath}/{filename}.npy', chroma)
         self.filenames = filenames
 
         print('\nChroma features have been successfully extracted or loaded from all audio files')
@@ -432,57 +436,85 @@ class duplicateFinder:
     @staticmethod
     def ffmpeg_load_audio(filename: str,
                           sr: int = 22050,
-                          mono: bool = True,
-                          normalize: bool = True,
-                          in_type=np.int16,
-                          out_type=np.float32,
-                          DEVNULL=open(os.devnull, 'w')):
+                          mono: bool = True):
         """
-        Ffmpeg function for the non .wav audio files.
+        Ffmpeg function for the non .wav audio files.        
         """
         channels = 1 if mono else 2
-        format_strings = {
-            np.float64: 'f64le',
-            np.float32: 'f32le',
-            np.int16: 's16le',
-            np.int32: 's32le',
-            np.uint32: 'u32le'
-        }
-        format_string = format_strings[in_type]
         command = [
             'ffmpeg',
             '-i', filename,
-            '-f', format_string,
-            '-acodec', 'pcm_' + format_string,
+            '-f', 's16le',
+            '-acodec', 'pcm_s16le',
             '-ar', str(sr),
             '-ac', str(channels),
+            '-hide_banner',
+            '-loglevel', 'warning',
             '-']
-        p = sp.Popen(command, stdout=sp.PIPE, stderr=DEVNULL, bufsize=4096, shell=True)
-        bytes_per_sample = np.dtype(in_type).itemsize
-        frame_size = bytes_per_sample * channels
-        chunk_size = frame_size * sr  # read in 1-second chunks
-        raw = b''
-        with p.stdout as stdout:
-            while True:
-                data = stdout.read(chunk_size)
-                if data:
-                    raw += data
-                else:
-                    break
-        # audio = np.fromstring(raw, dtype=in_type).astype(out_type) # older version
-        audio = np.frombuffer(raw, dtype=in_type).astype(out_type)
-        if channels > 1:
-            audio = audio.reshape((-1, channels)).transpose()
-        if audio.size == 0:
-            return audio, sr
-        if issubclass(out_type, np.floating):
-            if normalize:
-                peak = np.abs(audio).max()
-                if peak > 0:
-                    audio /= peak
-            elif issubclass(in_type, np.integer):
-                audio /= np.iinfo(in_type).max
-        return audio, sr
+        
+        pipe = sp.Popen(command, stdout=sp.PIPE)
+        stdoutdata = pipe.stdout.read()
+        audio_array = np.fromstring(stdoutdata, dtype="int16")
+
+        if channels == 2:
+            audio_array = audio_array.reshape((len(audio_array)/2,2))
+        return audio_array, sr
+
+    # @staticmethod
+    # def ffmpeg_load_audio(filename: str,
+    #                       sr: int = 22050,
+    #                       mono: bool = True,
+    #                       normalize: bool = True,
+    #                       in_type=np.int16,
+    #                       out_type=np.float32,
+    #                       DEVNULL=open(os.devnull, 'w')):
+    #     """
+    #     Ffmpeg function for the non .wav audio files. Enables full control of the audio data.
+    #     In this setting, it works only on Windows.
+    #     """
+    #     channels = 1 if mono else 2
+    #     format_strings = {
+    #         np.float64: 'f64le',
+    #         np.float32: 'f32le',
+    #         np.int16: 's16le',
+    #         np.int32: 's32le',
+    #         np.uint32: 'u32le'
+    #     }
+    #     format_string = format_strings[in_type]
+    #     command = [
+    #         'ffmpeg',
+    #         '-i', filename,
+    #         '-f', format_string,
+    #         '-acodec', 'pcm_' + format_string,
+    #         '-ar', str(sr),
+    #         '-ac', str(channels),
+    #         '-']
+    #     p = sp.Popen(command, stdout=sp.PIPE, stderr=DEVNULL, bufsize=4096, shell=True)
+    #     bytes_per_sample = np.dtype(in_type).itemsize
+    #     frame_size = bytes_per_sample * channels
+    #     chunk_size = frame_size * sr  # read in 1-second chunks
+    #     raw = b''
+    #     with p.stdout as stdout:
+    #         while True:
+    #             data = stdout.read(chunk_size)
+    #             if data:
+    #                 raw += data
+    #             else:
+    #                 break
+    #     # audio = np.fromstring(raw, dtype=in_type).astype(out_type) # older version
+    #     audio = np.frombuffer(raw, dtype=in_type).astype(out_type)
+    #     if channels > 1:
+    #         audio = audio.reshape((-1, channels)).transpose()
+    #     if audio.size == 0:
+    #         return audio, sr
+    #     if issubclass(out_type, np.floating):
+    #         if normalize:
+    #             peak = np.abs(audio).max()
+    #             if peak > 0:
+    #                 audio /= peak
+    #         elif issubclass(in_type, np.integer):
+    #             audio /= np.iinfo(in_type).max
+    #     return audio, sr
 
     @staticmethod
     def calculate_chromagram_nnAudio(audio: np.ndarray,
@@ -512,10 +544,9 @@ class duplicateFinder:
         """
         Calculate chroma features using synctoolbox module (cpu).
         """
-        with HiddenPrints():
-            f_pitch = audio_to_pitch_features(audio, Fs=fs)
-            f_chroma = pitch_to_chroma(f_pitch=f_pitch)
-            f_chroma_quantized = quantize_chroma(f_chroma=f_chroma)
+        f_pitch = audio_to_pitch_features(audio, Fs=fs)
+        f_chroma = pitch_to_chroma(f_pitch=f_pitch)
+        f_chroma_quantized = quantize_chroma(f_chroma=f_chroma)
         return f_chroma_quantized
 
     @staticmethod
@@ -535,7 +566,7 @@ class duplicateFinder:
 
 class HiddenPrints:
     """
-    Class to hide the print functions from default synctoolbox settings.
+    Class to hide the print functions (to suppress synctoolbox and nnAudio prints).
     """
     def __enter__(self):
         self._original_stdout = sys.stdout
@@ -556,7 +587,7 @@ if __name__ == '__main__':
                             help='Path to the folder with files')
         parser.add_argument('-f', '--input_files', type=list, required=False, default=None,
                             help='List of paths of the files')
-        parser.add_argument('-r', '--reference', type=str, required=False, default=None,
+        parser.add_argument('-r', '--reference', type=str, required=False, default='',
                             help='Path of the reference file')
         parser.add_argument('-rn', '--reference_name', type=str, required=False, default='',
                             help='Name of reference file')

@@ -7,7 +7,7 @@ import librosa
 import numpy as np
 import pandas as pd
 from PIL import Image, ImageOps
-
+import warnings
 import torch
 import cv2
 import tkinter as tk
@@ -15,6 +15,8 @@ from tkinter import filedialog
 from synctoolbox.feature.pitch import audio_to_pitch_features
 from synctoolbox.feature.chroma import pitch_to_chroma, quantize_chroma
 from nnAudio import features
+
+warnings.simplefilter("ignore", DeprecationWarning)
 
 
 class Console(tk.Text):
@@ -47,7 +49,7 @@ class Console(tk.Text):
 
 class HiddenPrints:
     """
-    Class to hide the print functions from default synctoolbox settings.
+    Class to hide the print functions (to suppress synctoolbox and nnAudio prints).
     """
     def __enter__(self):
         self._original_stdout = sys.stdout
@@ -160,7 +162,7 @@ class duplicateFinder:
         print(f'\nParameters selected:')
         if path_to_files:
             print(f'path_to_files: {path_to_files}')
-        print(f'output_path = {self.output_path}')
+        print(f'output_path: {self.output_path}')
         print(f'matching: {matching}')
         print(f'matching_single: {matching_single}')
         if reference:
@@ -186,9 +188,8 @@ class duplicateFinder:
             if reference == '' and reference_name == '':
                 reference = files[0]
                 files.remove(reference)
-                if self.debug:
-                    print('Reference chosen automatically (first item of the list).')
-                    print(f'Reference: {reference}')
+                print('Reference chosen automatically (first item of the list).')
+                print(f'Reference: {reference}')
             elif reference_name != '':
                 try:
                     reference = [file for file in files if reference_name in file][0]
@@ -340,15 +341,16 @@ class duplicateFinder:
         low_duplicates = []
         result_all = []
 
-        ref_audio_data, _ = self.ffmpeg_load_audio(reference, sr=self.__fs, mono=self.mono)
-        ref_filename = os.path.basename(reference)
-        if self.chroma_method == 'nnAudio':
-            ref_chroma = self.calculate_chromagram_nnAudio(ref_audio_data)
-        elif self.chroma_method == 'synctoolbox':
-            ref_chroma = self.calculate_chromagram_synctoolbox(ref_audio_data)
-        else:
-            print('Chroma method has to be selected.')
-            return None
+        with HiddenPrints():
+            ref_audio_data, _ = self.ffmpeg_load_audio(filename=reference, sr=self.__fs, mono=self.mono)        
+            ref_filename = os.path.basename(reference)
+            if self.chroma_method == 'nnAudio':
+                ref_chroma = self.calculate_chromagram_nnAudio(ref_audio_data)
+            elif self.chroma_method == 'synctoolbox':
+                ref_chroma = self.calculate_chromagram_synctoolbox(ref_audio_data)
+            else:
+                print('Chroma method has to be selected.')
+                return None
 
         np.save(f'{self.ref_path}/{ref_filename}.npy', ref_chroma)
         self.save_chroma_image(f'{self.ref_path}/{ref_filename}.npy', f'{self.ref_path}/{ref_filename}.png')
@@ -408,18 +410,19 @@ class duplicateFinder:
         """
         filenames = []
         print(f'...extracting chroma features...')
-        for file in files:
-            filename = os.path.basename(file)
-            filenames.append(filename)
-            if not os.path.exists(f'{self.chroma_filepath}/{filename}.npy'):
-                audio_data, _ = self.ffmpeg_load_audio(file, sr=self.__fs, mono=self.mono)
-                if self.chroma_method == 'nnAudio':
-                    chroma = self.calculate_chromagram_nnAudio(audio_data)
-                elif self.chroma_method == 'synctoolbox':
-                    chroma = self.calculate_chromagram_synctoolbox(audio_data)
-                else:
-                    print('Choose the chroma method.')
-                np.save(f'{self.chroma_filepath}/{filename}.npy', chroma)
+        with HiddenPrints():
+            for file in files:
+                filename = os.path.basename(file)
+                filenames.append(filename)
+                if not os.path.exists(f'{self.chroma_filepath}/{filename}.npy'):
+                    audio_data, _ = self.ffmpeg_load_audio(filename=file, sr=self.__fs, mono=self.mono)
+                    if self.chroma_method == 'nnAudio':
+                        chroma = self.calculate_chromagram_nnAudio(audio_data)
+                    elif self.chroma_method == 'synctoolbox':
+                        chroma = self.calculate_chromagram_synctoolbox(audio_data)
+                    else:
+                        print('Choose the chroma method.')
+                    np.save(f'{self.chroma_filepath}/{filename}.npy', chroma)
         self.filenames = filenames
 
         print('\nChroma features have been successfully extracted or loaded from all audio files')
@@ -493,57 +496,87 @@ class duplicateFinder:
     @staticmethod
     def ffmpeg_load_audio(filename: str,
                           sr: int = 22050,
-                          mono: bool = True,
-                          normalize: bool = True,
-                          in_type=np.int16,
-                          out_type=np.float32,
-                          DEVNULL=open(os.devnull, 'w')):
+                          mono: bool = True):
         """
-        Ffmpeg function for the non .wav audio files.
+        Ffmpeg function for the non .wav audio files.        
         """
         channels = 1 if mono else 2
-        format_strings = {
-            np.float64: 'f64le',
-            np.float32: 'f32le',
-            np.int16: 's16le',
-            np.int32: 's32le',
-            np.uint32: 'u32le'
-        }
-        format_string = format_strings[in_type]
         command = [
             'ffmpeg',
             '-i', filename,
-            '-f', format_string,
-            '-acodec', 'pcm_' + format_string,
+            '-f', 's16le',
+            '-acodec', 'pcm_s16le',
             '-ar', str(sr),
             '-ac', str(channels),
+            '-hide_banner',
+            '-loglevel', 'warning',
             '-']
-        p = sp.Popen(command, stdout=sp.PIPE, stderr=DEVNULL, bufsize=4096, shell=True)
-        bytes_per_sample = np.dtype(in_type).itemsize
-        frame_size = bytes_per_sample * channels
-        chunk_size = frame_size * sr  # read in 1-second chunks
-        raw = b''
-        with p.stdout as stdout:
-            while True:
-                data = stdout.read(chunk_size)
-                if data:
-                    raw += data
-                else:
-                    break
-        # audio = np.fromstring(raw, dtype=in_type).astype(out_type) # older version
-        audio = np.frombuffer(raw, dtype=in_type).astype(out_type)
-        if channels > 1:
-            audio = audio.reshape((-1, channels)).transpose()
-        if audio.size == 0:
-            return audio, sr
-        if issubclass(out_type, np.floating):
-            if normalize:
-                peak = np.abs(audio).max()
-                if peak > 0:
-                    audio /= peak
-            elif issubclass(in_type, np.integer):
-                audio /= np.iinfo(in_type).max
-        return audio, sr
+        
+        pipe = sp.Popen(command, stdout=sp.PIPE)
+        stdoutdata = pipe.stdout.read()
+        audio_array = np.fromstring(stdoutdata, dtype="int16")
+
+        if channels == 2:
+            audio_array = audio_array.reshape((len(audio_array)/2,2))
+        return audio_array, sr
+
+
+
+    # @staticmethod
+    # def ffmpeg_load_audio_full(filename: str,
+    #                       sr: int = 22050,
+    #                       mono: bool = True,
+    #                       normalize: bool = True,
+    #                       in_type=np.int16,
+    #                       out_type=np.float32,
+    #                       DEVNULL=open(os.devnull, 'w')):
+    #     """
+    #     Ffmpeg function for the non .wav audio files. Enables full control of the audio data.
+    #     In this setting, it works only on Windows.
+    #     """
+    #     channels = 1 if mono else 2
+    #     format_strings = {
+    #         np.float64: 'f64le',
+    #         np.float32: 'f32le',
+    #         np.int16: 's16le',
+    #         np.int32: 's32le',
+    #         np.uint32: 'u32le'
+    #     }
+    #     format_string = format_strings[in_type]
+    #     command = [
+    #         'ffmpeg',
+    #         '-i', filename,
+    #         '-f', format_string,
+    #         '-acodec', 'pcm_' + format_string,
+    #         '-ar', str(sr),
+    #         '-ac', str(channels),
+    #         '-']
+    #     p = sp.Popen(command, stdout=sp.PIPE, stderr=DEVNULL, bufsize=4096, shell=True)
+    #     bytes_per_sample = np.dtype(in_type).itemsize
+    #     frame_size = bytes_per_sample * channels
+    #     chunk_size = frame_size * sr  # read in 1-second chunks
+    #     raw = b''
+    #     with p.stdout as stdout:
+    #         while True:
+    #             data = stdout.read(chunk_size)
+    #             if data:
+    #                 raw += data
+    #             else:
+    #                 break
+    #     # audio = np.fromstring(raw, dtype=in_type).astype(out_type) # older version
+    #     audio = np.frombuffer(raw, dtype=in_type).astype(out_type)
+    #     if channels > 1:
+    #         audio = audio.reshape((-1, channels)).transpose()
+    #     if audio.size == 0:
+    #         return audio, sr
+    #     if issubclass(out_type, np.floating):
+    #         if normalize:
+    #             peak = np.abs(audio).max()
+    #             if peak > 0:
+    #                 audio /= peak
+    #         elif issubclass(in_type, np.integer):
+    #             audio /= np.iinfo(in_type).max
+    #     return audio, sr
 
     @staticmethod
     def calculate_chromagram_nnAudio(audio: np.ndarray,
@@ -648,7 +681,7 @@ def reset_selection():
     global reference_name
 
     path_to_files = tk.StringVar()
-    output_path = tk.StringVar()
+    output_path = tk.StringVar(value='df_data')
     input_files = []
     reference = ''
     reference_name = ''
