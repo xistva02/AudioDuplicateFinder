@@ -30,7 +30,7 @@ The implementation was tested on Windows 10 (21H2) and Linux Mint 21.1.
 
 ### Note: 
 
-Parameters 'matching' and 'matching_single' cannot be set to True in the same time. Similarly, 'reference' and 'reference_name' cannot be set in the same time. However, one can choose 'path_to_files' and 'input_files' simultaneously, automatically discarding the possible duplicate paths.
+Parameters 'matching' and 'matching_single' cannot be set to True at the same time. Similarly, 'reference' and 'reference_name' cannot be set at the same time. However, one can choose 'path_to_files' and 'input_files' simultaneously, automatically discarding the possible duplicate paths.
 
 ## Install
 
