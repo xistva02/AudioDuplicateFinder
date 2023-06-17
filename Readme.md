@@ -47,22 +47,22 @@ python install openpyxl
 ```
 
 ## Example of usage:
-Let's have all audio files in '/home/finder_data' folder (and subfolders). To find all duplicates and use all vs. all strategy, use:
+Let's have all audio files in 'audio/input_data' folder (and subfolders). To find all duplicates and use all vs. all strategy, use:
 
 ```
-python dF.py -p /home/finder_data -m True
+python dF.py -p ./audio/input_data -m True
 ```
 
-To select a specific file (e.g., 'test_recording.wav') and compare it to all other files in '/home/finder_data' folder, use:
+To select a specific file (e.g., 'test_recording.wav') and compare it to all other files in 'audio/input_data' folder, use:
 
 ```
-python dF.py -p /home/finder_data -r /home/finder_data/test_recording.wav -ms True
+python dF.py -p ./audio/input_data -r ./audio/input_data/test_recording.wav -ms True
 ```
 
 or
 
 ```
-python dF.py -p /home/finder_data -rn test_recording -ms True
+python dF.py -p ./audio/input_data -rn test_recording -ms True
 ```
 
 **df_GUI.py** version works the same way; parameters are chosen via graphical interface:
@@ -72,7 +72,7 @@ python dF_GUI.py
 ```
 
 
-Useful flags:
+Other useful flags:
 
 - -o path to the output directory
 - -d if True, outputs additional information
