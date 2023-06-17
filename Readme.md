@@ -2,7 +2,7 @@
 
 ## Introduction:
 
-This repository contains the **duplicateFinder**, scripts for finding audio duplicates inside a given set of recordings.
+This repository contains the **duplicateFinder**, python scripts for finding audio duplicates inside a given set of recordings.
 Unlike many other approaches, it uses raw audio information without any metadata (except the name of files). It is able to recognise
 duplicates even when they slightly differ and/or contain only a segment of the recording.
 
@@ -34,7 +34,7 @@ Parameters 'matching' and 'matching_single' cannot be set to True at the same ti
 
 ## Install
 
-To install the dependencies, use:
+The scripts were developed and tested on Python 3.7.9. To install the dependencies, use:
 
 ```
 python install -r requirements.txt
