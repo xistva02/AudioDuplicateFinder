@@ -12,7 +12,7 @@ flags or a simple Tkinter GUI.
 Example of GUI version:
 
 <p align="center">
-<img src="figs/GUI.PNG" width="500" height="500" />
+<img src="figs/GUI.png" width="500" height="500" />
 </p>
 <!-- ![Alt text](GUI.PNG =500x500) -->
 
