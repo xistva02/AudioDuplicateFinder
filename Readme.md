@@ -46,7 +46,7 @@ To load non .wav audio files, install ffmpeg to your OS and add it to the SYS pa
 python install openpyxl
 ```
 
-## Example of usage:
+## How to use:
 Let's have all audio files in 'audio/input_data' folder (and subfolders). To find all duplicates and use all vs. all strategy, use:
 
 ```
@@ -72,7 +72,7 @@ python dF_GUI.py
 ```
 
 
-Other useful flags:
+Useful flags:
 
 - -o path to the output directory
 - -d if True, outputs additional information
